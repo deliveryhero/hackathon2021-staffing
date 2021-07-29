@@ -5,7 +5,7 @@ import static java.lang.Integer.parseInt;
 
 import com.deliveryhero.models.Demand;
 import com.deliveryhero.models.Employee;
-import com.deliveryhero.models.TimeSlot;
+import com.deliveryhero.models.TimeRange;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.FileReader;
@@ -32,7 +32,7 @@ public class DataService {
         final List<Employee> result = new ArrayList<>();
         final CSVReader csvReader =
                 new CSVReaderBuilder(new FileReader("data/se-borlange/employees.csv")).withSkipLines(1).build();
-        Map<String, List<TimeSlot>> employeeUnavailableTimes = new HashMap<>();
+        Map<String, List<TimeRange>> employeeUnavailableTimes = new HashMap<>();
         for (final String[] row : csvReader.readAll()) {
             Employee employee = createEmployee(row);
             employeeUnavailableTimes.put(employee.getEmployeeId(), employee.getUnavailableTimes());
@@ -42,13 +42,13 @@ public class DataService {
         return result;
     }
 
-    private void fillUnavailableTimes(Map<String, List<TimeSlot>> employeeUnavailableTimes) throws IOException {
+    private void fillUnavailableTimes(Map<String, List<TimeRange>> employeeUnavailableTimes) throws IOException {
         final CSVReader csvReader =
                 new CSVReaderBuilder(new FileReader("data/se-borlange/unavailabilities.csv")).withSkipLines(1).build();
         for (final String[] row : csvReader.readAll()) {
-            List<TimeSlot> employeeUnavailableTime = employeeUnavailableTimes.get(row[0]);
+            List<TimeRange> employeeUnavailableTime = employeeUnavailableTimes.get(row[0]);
             if(employeeUnavailableTime != null)
-                employeeUnavailableTime.add(new TimeSlot(Instant.ofEpochSecond(parseInt(row[1])), Instant.ofEpochSecond(parseInt(row[8]))));
+                employeeUnavailableTime.add(new TimeRange(Instant.ofEpochSecond(parseInt(row[1])), Instant.ofEpochSecond(parseInt(row[8]))));
         }
     }
 

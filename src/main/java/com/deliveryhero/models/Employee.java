@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +22,7 @@ public class Employee {
     private int minDurationPerWeekHours;
     private int maxDurationPerWeekHours;
     private int minBreakDurationHours;
-    private List<TimeSlot> unavailableTimes;
+    private List<TimeRange> unavailableTimes;
 
     public Employee(String employeeId,
             String startingPointId,
@@ -52,7 +51,7 @@ public class Employee {
 
     }
 
-    public List<TimeSlot> getUnavailableTimes() {
+    public List<TimeRange> getUnavailableTimes() {
         return unavailableTimes;
     }
 }

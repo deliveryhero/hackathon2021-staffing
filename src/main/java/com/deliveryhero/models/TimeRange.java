@@ -9,7 +9,7 @@ import java.time.Instant;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TimeSlot {
+public class TimeRange {
     private Instant start;
     private Instant end;
 }

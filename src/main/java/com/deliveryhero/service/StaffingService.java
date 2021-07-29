@@ -1,9 +1,7 @@
 package com.deliveryhero.service;
 
-import com.deliveryhero.models.Demand;
-import com.deliveryhero.models.Employee;
-import com.deliveryhero.models.Shift;
-import com.deliveryhero.models.SlotAssignment;
+import com.deliveryhero.models.*;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,6 +58,7 @@ public class StaffingService {
     }
 
     private void allocateSlotsToEmployee(final Employee employee) {
+        List<TimeRange> unavailableTimes = employee.getUnavailableTimes();
         for (int shiftIndex = 0; shiftIndex < employee.getMaxShiftsPerDay(); shiftIndex++) {
             computeGlobalImprovements(employee, shiftIndex);
             allocateForShift(employee, shiftIndex);
