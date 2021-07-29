@@ -2,9 +2,10 @@ package com.deliveryhero.service;
 
 import com.deliveryhero.models.Demand;
 import com.deliveryhero.models.Employee;
-import com.deliveryhero.models.Shift;
+import com.deliveryhero.models.RemainingSlots;
 import com.deliveryhero.models.SlotAssignment;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,53 +15,89 @@ import java.util.stream.Collectors;
 public class StaffingService {
     private final List<Demand> demandData = new ArrayList<>();
     private final List<Employee> employees = new ArrayList<>();
-    final List<SlotAssignment> slotMatrix;
-    final Map<String, List<Shift>> employeeSlotsMap;
+    private final Map<LocalDate, List<SlotAssignment>> weeklySlotMatrix = new HashMap<>();
+    private List<SlotAssignment> currentSlotMatrix;
+//    private LocalDate currentDay;
+    private final Map<String, RemainingSlots> remainingSlots = new HashMap<>();
 
     public StaffingService() {
         final DataService dataService = new DataService();
         try {
             demandData.addAll(dataService.getDemandData());
             employees.addAll(dataService.getEmployeeData());
-            slotMatrix = createSlotMatrix();
-            employeeSlotsMap = createEmployeeSlotsMap();
+            initRemainingSlots();
+            createSlotMatrix();
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public void doAssignments() {
-        for(final Employee employee : employees) {
-            allocateSlotsToEmployee(employee);
+        for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
+//            currentDay = entry.getKey();
+            currentSlotMatrix = entry.getValue();
+            resetDailyRemainingSlots();
+            for (final Employee employee : employees) {
+                allocateSlotsToEmployee(employee);
+            }
         }
         printSolution();
     }
-    
-    private void printSolution() {
-        for(final SlotAssignment row: slotMatrix) {
-            final List<String> assignedEmployees = row.getAssignedEmployees().stream().map(emp -> emp.getEmployeeId()).collect(Collectors.toList());
-            System.out.println(row.getDemand().getTimestamp() + "\t" + String.join(",",assignedEmployees));
-        }
-    }
 
-    private Map<String, List<Shift>> createEmployeeSlotsMap() {
-        final Map<String, List<Shift>> result = new HashMap<>();
+    private void resetDailyRemainingSlots() {
         for (final Employee employee : employees) {
-            result.put(employee.getEmployeeId(), new ArrayList<>());
+            remainingSlots.get(employee.getEmployeeId())
+                    .setSlotsRemainingInDay(employee.getMaxDurationPerDayHours() * 4);
         }
-        return result;
     }
 
-    private List<SlotAssignment> createSlotMatrix() {
-        final List<SlotAssignment> matrix = new ArrayList<>();
-        for (final Demand demand : demandData) {
-            matrix.add(new SlotAssignment(demand));
+    private void resetShiftRemainingSlots() {
+        for (final Employee employee : employees) {
+            remainingSlots.get(employee.getEmployeeId())
+                    .setSlotsRemainingInShift(employee.getMaxShiftDurationHours() * 4);
         }
-        return matrix;
+    }
+
+    private void initRemainingSlots() {
+        for (final Employee employee : employees) {
+            final int slotsRemainingInShift = employee.getMaxShiftDurationHours() * 4;
+            final int slotsRemainingInDay = employee.getMaxDurationPerDayHours() * 4;
+            final int slotsRemainingInWeek = employee.getMaxDurationPerWeekHours() * 4;
+            remainingSlots.put(employee.getEmployeeId(),
+                    new RemainingSlots(slotsRemainingInShift, slotsRemainingInDay, slotsRemainingInWeek));
+        }
+    }
+
+    private void printSolution() {
+        for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
+            for (final SlotAssignment row : entry.getValue()) {
+                final List<String> assignedEmployees =
+                        row.getAssignedEmployees().stream().map(emp -> emp.getEmployeeId())
+                                .collect(Collectors.toList());
+                final String output = String.join("\t", row.getDemand().getTimestamp().toString(),
+                        String.valueOf(row.getDemand().getDemand()), String.join(",", assignedEmployees));
+                System.out.println(output);
+            }
+        }
+    }
+
+    private void createSlotMatrix() {
+        for (final Map.Entry<LocalDate, List<Demand>> entry : getDailyDemand().entrySet()) {
+            final List<SlotAssignment> matrix = new ArrayList<>();
+            for (final Demand demand : entry.getValue()) {
+                matrix.add(new SlotAssignment(demand));
+            }
+            weeklySlotMatrix.put(entry.getKey(), matrix);
+        }
+    }
+
+    private Map<LocalDate, List<Demand>> getDailyDemand() {
+        return demandData.stream().collect(Collectors.groupingBy(Demand::getDate));
     }
 
     private void allocateSlotsToEmployee(final Employee employee) {
         for (int shiftIndex = 0; shiftIndex < employee.getMaxShiftsPerDay(); shiftIndex++) {
+            resetShiftRemainingSlots();
             computeGlobalImprovements(employee, shiftIndex);
             allocateForShift(employee, shiftIndex);
         }
@@ -71,68 +108,56 @@ public class StaffingService {
         if (bestSlot == -1) {
             return;
         }
-        final int slotsToAssign = getRemainingSlotsCount(employee, shiftIndex);
-        for(int i = 0; i < slotsToAssign; i++) {
+        final int slotsToAssign = getRemainingSlotsCount(employee);
+        for (int i = 0; i < slotsToAssign; i++) {
             assign(employee, bestSlot + i, shiftIndex);
-        }        
+        }
     }
 
-    // TODO : also consider remaining hours per week
-    private int getRemainingSlotsCount(final Employee employee, final int shiftIndex) {
-        final List<Shift> shifts = employeeSlotsMap.get(employee.getEmployeeId());
-        final int numSlotsAlreadyAssignedInShift = shifts.size() <= shiftIndex ? 0 :
-                shifts.get(shiftIndex).getTimeSlots().size();
-        final int numSlotsAlreadyAssignedInDay = shifts.stream()
-                .mapToInt(shift -> shift.getTimeSlots().size()).sum();
-        final int remainingInShift = employee.getMaxShiftDurationHours() * 4 - numSlotsAlreadyAssignedInShift;
-        final int remainingInDay = employee.getMaxDurationPerDayHours() * 4 - numSlotsAlreadyAssignedInDay;
-        return Math.min(remainingInShift, remainingInDay);
+    private int getRemainingSlotsCount(final Employee employee) {
+        final RemainingSlots slots = remainingSlots.get(employee.getEmployeeId());
+        return Math.min(slots.getSlotsRemainingInShift(),
+                Math.min(slots.getSlotsRemainingInDay(), slots.getSlotsRemainingInWeek()));
     }
 
     private void assign(final Employee employee, final int slotIndex, final int shiftIndex) {
-        if(slotIndex >= slotMatrix.size()) {
-            throw new IllegalStateException("Trying to assign to unknown slot with index = " + slotIndex);
+        if (slotIndex >= currentSlotMatrix.size()) {
+//            throw new IllegalStateException("Trying to assign to unknown slot with index = " + slotIndex);
+            return;
         }
-        final SlotAssignment slot = slotMatrix.get(slotIndex);
+        final SlotAssignment slot = currentSlotMatrix.get(slotIndex);
         slot.addEmployee(employee);
-        final List<Shift> shifts = employeeSlotsMap.get(employee.getEmployeeId());
-        if (shifts.size() >= shiftIndex) {
-            shifts.add(new Shift());
-        }
-        shifts.get(shiftIndex).addTimeSlot(slot.getDemand().getTimestamp());
+        remainingSlots.get(employee.getEmployeeId()).decrement();
     }
 
     private int getBestSlot(final Employee employee) {
         int result = -1;
         float max = 0;
-        for (int i = 0; i < slotMatrix.size(); i++) {
-            final boolean improvesPenalty = slotMatrix.get(i).getGlobalPenaltyImprovement() > max;
-            final boolean alreadyAssigned = slotMatrix.get(i).getAssignedEmployees().stream()
+        for (int i = 0; i < currentSlotMatrix.size(); i++) {
+            final boolean improvesPenalty = currentSlotMatrix.get(i).getGlobalPenaltyImprovement() > max;
+            final boolean alreadyAssigned = currentSlotMatrix.get(i).getAssignedEmployees().stream()
                     .anyMatch(emp -> emp.getEmployeeId().equals(employee.getEmployeeId()));
             if (improvesPenalty && !alreadyAssigned) {
                 result = i;
-                max = slotMatrix.get(i).getGlobalPenaltyImprovement();
+                max = currentSlotMatrix.get(i).getGlobalPenaltyImprovement();
             }
         }
         return result;
     }
 
     private List<SlotAssignment> computeGlobalImprovements(final Employee employee, final int shiftIndex) {
-        final int shiftSize = Math.min(
-                employee.getMaxShiftDurationHours() * 4,
-                getRemainingSlotsCount(employee, shiftIndex));
-
-        for (int i = 0; i < slotMatrix.size(); i++) {
+        final int shiftSize = getRemainingSlotsCount(employee);
+        for (int i = 0; i < currentSlotMatrix.size(); i++) {
             final float globalImprovement = getGlobalImprovement(i, shiftSize);
-            slotMatrix.get(i).setGlobalPenaltyImprovement(globalImprovement);
+            currentSlotMatrix.get(i).setGlobalPenaltyImprovement(globalImprovement);
         }
-        return slotMatrix;
+        return currentSlotMatrix;
     }
 
     private float getGlobalImprovement(final int rowIndex, final int lookAheadSlots) {
         float result = 0;
         for (int i = rowIndex; i <= rowIndex + lookAheadSlots; i++) {
-            result += slotMatrix.get(rowIndex).getLocalPenaltyImprovement();
+            result += currentSlotMatrix.get(rowIndex).getLocalPenaltyImprovement();
         }
         return result;
     }

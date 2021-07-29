@@ -1,6 +1,7 @@
 package com.deliveryhero.models;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,5 +16,9 @@ public class Demand {
     private LocalDateTime timestamp;
     private int demand;
     private float underStaffingPenalty;
-    private float overStaffingPenalty;     
+    private float overStaffingPenalty;
+    
+    public LocalDate getDate() {
+        return timestamp.toLocalDate();
+    }
 }

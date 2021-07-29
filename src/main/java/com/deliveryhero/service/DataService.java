@@ -28,7 +28,7 @@ public class DataService {
     public List<Employee> getEmployeeData() throws IOException {
         final List<Employee> result = new ArrayList<>();
         final CSVReader csvReader =
-                new CSVReaderBuilder(new FileReader("data/se-borlange/employees.csv")).withSkipLines(1).build();
+                new CSVReaderBuilder(new FileReader("data/se-borlange/employees_available.csv")).withSkipLines(1).build();
         for (final String[] row : csvReader.readAll()) {
             result.add(createEmployee(row));
         }
