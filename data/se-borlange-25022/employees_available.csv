@@ -1,0 +1,13 @@
+﻿employee_id,starting_point_id,max_shifts_per_day,min_shift_duration,min_shifts_per_day,max_shift_duration,min_duration_per_day,max_duration_per_day,min_duration_per_week,max_duration_per_week,min_break_duration
+528741,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour
+529775,25022,2,2 hours,None,5 hours,None,8 hours,10 hours,35 hours,1 hour
+588788,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour
+609242,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour
+612034,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour
+793925,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour
+826572,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour
+850620,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour
+853000,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour
+896996,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour
+919899,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour
+931873,25022,2,3 hours,None,4 hours,None,8 hours,10 hours,35 hours,1 hour

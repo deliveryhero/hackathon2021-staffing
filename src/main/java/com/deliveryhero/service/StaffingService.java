@@ -73,7 +73,7 @@ public class StaffingService {
                 final List<String> assignedEmployees =
                         row.getAssignedEmployees().stream().map(emp -> emp.getEmployeeId())
                                 .collect(Collectors.toList());
-                final String output = String.join("\t", row.getDemand().getTimestamp().toString(),
+                final String output = String.join("\t", row.getDemand().getStartingPointId(), row.getDemand().getTimestamp().toString(),
                         String.valueOf(row.getDemand().getDemand()), String.join(",", assignedEmployees));
                 System.out.println(output);
             }
