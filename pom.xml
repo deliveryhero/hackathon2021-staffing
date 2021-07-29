@@ -3,7 +3,19 @@
   <groupId>hackathon2021-staffing</groupId>
   <artifactId>hackathon2021-staffing</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencies>
     <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
