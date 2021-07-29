@@ -25,14 +25,12 @@ public class SlotAssignment {
 
     public float getLocalPenaltyImprovement() {
         final int diff = assignedEmployees.size() - demand.getDemand();
-        final float currentPenalty = computePenalty(diff);
-        final float newPenalty = computePenalty(diff + 1);
-        return currentPenalty - newPenalty;
-    }
-    
-    private float computePenalty(final int diff) {
-        return diff == 0 ? 0
-                : diff < 0 ? demand.getUnderStaffingPenalty() * Math.abs(diff)
-                        : demand.getOverStaffingPenalty() * Math.abs(diff);
+        if (diff < 0) {
+            // under-staffing
+            return demand.getUnderStaffingPenalty() * -diff;
+        } else {
+            // sufficient staff
+            return demand.getOverStaffingPenalty() * diff;
+        }
     }
 }

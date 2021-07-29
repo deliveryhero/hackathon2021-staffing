@@ -50,11 +50,9 @@ public class StaffingService {
         }
     }
 
-    private void resetShiftRemainingSlots() {
-        for (final Employee employee : employees) {
-            remainingSlots.get(employee.getEmployeeId())
-                    .setSlotsRemainingInShift(employee.getMaxShiftDurationHours() * 4);
-        }
+    private void resetShiftRemainingSlots(Employee employee) {
+        remainingSlots.get(employee.getEmployeeId())
+                .setSlotsRemainingInShift(employee.getMaxShiftDurationHours() * 4);
     }
 
     private void initRemainingSlots() {
@@ -97,7 +95,7 @@ public class StaffingService {
     private void allocateSlotsToEmployee(final Employee employee) {
         final List<TimeRange> unavailableTimes = employee.getUnavailableTimes();
         for (int shiftIndex = 0; shiftIndex < employee.getMaxShiftsPerDay(); shiftIndex++) {
-            resetShiftRemainingSlots();
+            resetShiftRemainingSlots(employee);
             computeGlobalImprovements(employee, shiftIndex);
             allocateForShift(employee, shiftIndex);
         }
