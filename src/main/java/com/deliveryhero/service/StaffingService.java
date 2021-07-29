@@ -72,7 +72,8 @@ public class StaffingService {
                         row.getAssignedEmployees().stream().map(emp -> emp.getEmployeeId())
                                 .collect(Collectors.toList());
                 final String output = String.join("\t", row.getDemand().getStartingPointId(), row.getDemand().getTimestamp().toString(),
-                        String.valueOf(row.getDemand().getDemand()), String.join(",", assignedEmployees));
+                        String.valueOf(row.getDemand().getDemand()), String.valueOf(row.getAssignedEmployees().size()),
+                        String.valueOf(row.computeLocalPenalty()), String.join(",", assignedEmployees));
                 System.out.println(output);
             }
         }
@@ -107,9 +108,12 @@ public class StaffingService {
             return;
         }
         final int slotsToAssign = getRemainingSlotsCount(employee);
-        for (int i = 0; i < slotsToAssign; i++) {
+        final int endSlot = Math.min(bestSlot + slotsToAssign, currentSlotMatrix.size()) - 1;
+        for (int i = 0; i <= slotsToAssign; i++) {
             assign(employee, bestSlot + i, shiftIndex);
         }
+        employee.addShift(new TimeRange(currentSlotMatrix.get(bestSlot).getDemand().getUnixTime(),
+                currentSlotMatrix.get(endSlot).getDemand().getUnixTime()));
     }
 
     private int getRemainingSlotsCount(final Employee employee) {
@@ -129,9 +133,11 @@ public class StaffingService {
 
     private int getBestSlot(final Employee employee) {
         int result = -1;
-        float max = 0;
+        float max = Float.MIN_VALUE;
         for (int i = 0; i < currentSlotMatrix.size(); i++) {
             final boolean improvesPenalty = currentSlotMatrix.get(i).getGlobalPenaltyImprovement() > max;
+            /// TODO should consider min break if it is assigned to the same rider.
+            // To check that the shift intercepts any of the time range in Employee.ShiftsAndBreak
             final boolean alreadyAssigned = currentSlotMatrix.get(i).getAssignedEmployees().stream()
                     .anyMatch(emp -> emp.getEmployeeId().equals(employee.getEmployeeId()));
             if (improvesPenalty && !alreadyAssigned) {
@@ -154,7 +160,7 @@ public class StaffingService {
     private float getGlobalImprovement(final int rowIndex, final int lookAheadSlots) {
         float result = 0;
         for (int i = rowIndex; i <= rowIndex + lookAheadSlots; i++) {
-            result += currentSlotMatrix.get(rowIndex).getLocalPenaltyImprovement();
+            result += currentSlotMatrix.get(rowIndex).computeLocalPenaltyImprovement();
         }
         return result;
     }

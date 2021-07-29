@@ -23,14 +23,26 @@ public class SlotAssignment {
         return Collections.unmodifiableList(assignedEmployees);
     }
 
-    public float getLocalPenaltyImprovement() {
-        final int diff = assignedEmployees.size() - demand.getDemand();
-        if (diff < 0) {
+    public float computeLocalPenaltyImprovement() {
+        if (assignedEmployees.size() - demand.getDemand() < 0) {
+            return demand.getUnderStaffingPenalty();
+        } else {
+            return -demand.getOverStaffingPenalty();
+        }
+    }
+
+    public float computeLocalPenalty() {
+        int supplyDemandDiff = assignedEmployees.size() - demand.getDemand();
+        if (supplyDemandDiff < 0) {
             // under-staffing
-            return demand.getUnderStaffingPenalty() * -diff;
+            return demand.getUnderStaffingPenalty() * -supplyDemandDiff;
         } else {
             // sufficient staff
-            return demand.getOverStaffingPenalty() * diff;
+            return demand.getOverStaffingPenalty() * supplyDemandDiff;
         }
+    }
+
+    public float getGlobalPenaltyImprovement() {
+        return globalPenaltyImprovement;
     }
 }
