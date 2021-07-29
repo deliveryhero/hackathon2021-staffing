@@ -4,5 +4,6 @@ bin/
 .classpath
 .project
 .settings/
+.DS_Store
 .idea/
-hackathon2021-staffing.iml
+*.iml
