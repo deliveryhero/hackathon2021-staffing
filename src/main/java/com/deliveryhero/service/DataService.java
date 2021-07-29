@@ -5,6 +5,7 @@ import static java.lang.Integer.parseInt;
 
 import com.deliveryhero.models.Demand;
 import com.deliveryhero.models.Employee;
+import com.deliveryhero.models.TimeRange;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.FileReader;
@@ -12,7 +13,9 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DataService {
     public List<Demand> getDemandData() throws IOException {
@@ -28,11 +31,26 @@ public class DataService {
     public List<Employee> getEmployeeData() throws IOException {
         final List<Employee> result = new ArrayList<>();
         final CSVReader csvReader =
-                new CSVReaderBuilder(new FileReader("data/se-borlange/employees_available.csv")).withSkipLines(1).build();
+                new CSVReaderBuilder(new FileReader("data/se-borlange/employees.csv")).withSkipLines(1).build();
+        final Map<String, List<TimeRange>> employeeUnavailableTimes = new HashMap<>();
         for (final String[] row : csvReader.readAll()) {
-            result.add(createEmployee(row));
+            final Employee employee = createEmployee(row);
+            employeeUnavailableTimes.put(employee.getEmployeeId(), employee.getUnavailableTimes());
+            result.add(employee);
         }
+        fillUnavailableTimes(employeeUnavailableTimes);
         return result;
+    }
+
+    private void fillUnavailableTimes(final Map<String, List<TimeRange>> employeeUnavailableTimes) throws IOException {
+        final CSVReader csvReader =
+                new CSVReaderBuilder(new FileReader("data/se-borlange/unavailabilities.csv")).withSkipLines(1).build();
+        for (final String[] row : csvReader.readAll()) {
+            final List<TimeRange> employeeUnavailableTime = employeeUnavailableTimes.get(row[0]);
+            if (employeeUnavailableTime != null)
+                employeeUnavailableTime.add(new TimeRange(Instant.ofEpochSecond(parseInt(row[1])),
+                        Instant.ofEpochSecond(parseInt(row[8]))));
+        }
     }
 
     private LocalDateTime getTimestamp(final String[] row) {
@@ -54,7 +72,7 @@ public class DataService {
                 parseFloat(row[9]),
                 parseFloat(row[10]));
     }
-    
+
     private Employee createEmployee(final String[] row) {
         return new Employee(
                 row[0],
@@ -67,8 +85,7 @@ public class DataService {
                 parseEmpData(row[7]),
                 parseEmpData(row[8]),
                 parseEmpData(row[9]),
-                parseEmpData(row[10])
-                );
+                parseEmpData(row[10]));
     }
 
     private static int parseEmpData(final String cellContent) {

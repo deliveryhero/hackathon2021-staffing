@@ -4,6 +4,7 @@ import com.deliveryhero.models.Demand;
 import com.deliveryhero.models.Employee;
 import com.deliveryhero.models.RemainingSlots;
 import com.deliveryhero.models.SlotAssignment;
+import com.deliveryhero.models.TimeRange;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -17,7 +18,6 @@ public class StaffingService {
     private final List<Employee> employees = new ArrayList<>();
     private final Map<LocalDate, List<SlotAssignment>> weeklySlotMatrix = new HashMap<>();
     private List<SlotAssignment> currentSlotMatrix;
-//    private LocalDate currentDay;
     private final Map<String, RemainingSlots> remainingSlots = new HashMap<>();
 
     public StaffingService() {
@@ -34,7 +34,6 @@ public class StaffingService {
 
     public void doAssignments() {
         for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
-//            currentDay = entry.getKey();
             currentSlotMatrix = entry.getValue();
             resetDailyRemainingSlots();
             for (final Employee employee : employees) {
@@ -96,6 +95,7 @@ public class StaffingService {
     }
 
     private void allocateSlotsToEmployee(final Employee employee) {
+        final List<TimeRange> unavailableTimes = employee.getUnavailableTimes();
         for (int shiftIndex = 0; shiftIndex < employee.getMaxShiftsPerDay(); shiftIndex++) {
             resetShiftRemainingSlots();
             computeGlobalImprovements(employee, shiftIndex);
@@ -122,7 +122,6 @@ public class StaffingService {
 
     private void assign(final Employee employee, final int slotIndex, final int shiftIndex) {
         if (slotIndex >= currentSlotMatrix.size()) {
-//            throw new IllegalStateException("Trying to assign to unknown slot with index = " + slotIndex);
             return;
         }
         final SlotAssignment slot = currentSlotMatrix.get(slotIndex);
