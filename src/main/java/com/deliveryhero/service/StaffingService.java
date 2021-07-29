@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class StaffingService {
     private final List<Demand> demandData = new ArrayList<>();
@@ -23,7 +24,6 @@ public class StaffingService {
             employees.addAll(dataService.getEmployeeData());
             slotMatrix = createSlotMatrix();
             employeeSlotsMap = createEmployeeSlotsMap();
-            System.out.println(demandData);
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
@@ -32,6 +32,14 @@ public class StaffingService {
     public void doAssignments() {
         for(final Employee employee : employees) {
             allocateSlotsToEmployee(employee);
+        }
+        printSolution();
+    }
+    
+    private void printSolution() {
+        for(final SlotAssignment row: slotMatrix) {
+            final List<String> assignedEmployees = row.getAssignedEmployees().stream().map(emp -> emp.getEmployeeId()).collect(Collectors.toList());
+            System.out.println(row.getDemand().getTimestamp() + "\t" + String.join(",",assignedEmployees));
         }
     }
 
@@ -52,9 +60,9 @@ public class StaffingService {
     }
 
     private void allocateSlotsToEmployee(final Employee employee) {
-        final List<SlotAssignment> slotMatrix = computeGlobalImprovements(employee);
-        for (int i = 0; i < employee.getMaxShiftsPerDay(); i++) {
-            allocateForShift(employee, i);
+        for (int shiftIndex = 0; shiftIndex < employee.getMaxShiftsPerDay(); shiftIndex++) {
+            computeGlobalImprovements(employee, shiftIndex);
+            allocateForShift(employee, shiftIndex);
         }
     }
 
@@ -63,19 +71,18 @@ public class StaffingService {
         if (bestSlot == -1) {
             return;
         }
-        assign(employee, bestSlot, shiftIndex);
+        final int slotsToAssign = getRemainingSlotsCount(employee, shiftIndex);
+        for(int i = 0; i < slotsToAssign; i++) {
+            assign(employee, bestSlot + i, shiftIndex);
+        }        
     }
 
-    private void assignAround(final Employee employee, final int bestSlot, final int numSlots) {
-        for (int i = 1; i <= numSlots; i++) {
-            
-        }
-    }
-
+    // TODO : also consider remaining hours per week
     private int getRemainingSlotsCount(final Employee employee, final int shiftIndex) {
-        final int numSlotsAlreadyAssignedInShift =
-                employeeSlotsMap.get(employee.getEmployeeId()).get(shiftIndex).getTimeSlots().size();
-        final int numSlotsAlreadyAssignedInDay = employeeSlotsMap.get(employee.getEmployeeId()).stream()
+        final List<Shift> shifts = employeeSlotsMap.get(employee.getEmployeeId());
+        final int numSlotsAlreadyAssignedInShift = shifts.size() <= shiftIndex ? 0 :
+                shifts.get(shiftIndex).getTimeSlots().size();
+        final int numSlotsAlreadyAssignedInDay = shifts.stream()
                 .mapToInt(shift -> shift.getTimeSlots().size()).sum();
         final int remainingInShift = employee.getMaxShiftDurationHours() * 4 - numSlotsAlreadyAssignedInShift;
         final int remainingInDay = employee.getMaxDurationPerDayHours() * 4 - numSlotsAlreadyAssignedInDay;
@@ -83,6 +90,9 @@ public class StaffingService {
     }
 
     private void assign(final Employee employee, final int slotIndex, final int shiftIndex) {
+        if(slotIndex >= slotMatrix.size()) {
+            throw new IllegalStateException("Trying to assign to unknown slot with index = " + slotIndex);
+        }
         final SlotAssignment slot = slotMatrix.get(slotIndex);
         slot.addEmployee(employee);
         final List<Shift> shifts = employeeSlotsMap.get(employee.getEmployeeId());
@@ -107,13 +117,13 @@ public class StaffingService {
         return result;
     }
 
-    private List<SlotAssignment> computeGlobalImprovements(final Employee employee) {
-        final int numSlots = employee.getMaxShiftDurationHours() * 4;
-        // add the logic numSlots = min(max shift duration, remaining hours per day,
-        // remaining hours per week)
+    private List<SlotAssignment> computeGlobalImprovements(final Employee employee, final int shiftIndex) {
+        final int shiftSize = Math.min(
+                employee.getMaxShiftDurationHours() * 4,
+                getRemainingSlotsCount(employee, shiftIndex));
 
         for (int i = 0; i < slotMatrix.size(); i++) {
-            final float globalImprovement = getGlobalImprovement(i, numSlots);
+            final float globalImprovement = getGlobalImprovement(i, shiftSize);
             slotMatrix.get(i).setGlobalPenaltyImprovement(globalImprovement);
         }
         return slotMatrix;
