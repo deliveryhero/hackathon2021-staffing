@@ -3,4 +3,17 @@
   <groupId>hackathon2021-staffing</groupId>
   <artifactId>hackathon2021-staffing</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  <dependencies>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>1.18.20</version>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>com.opencsv</groupId>
+        <artifactId>opencsv</artifactId>
+        <version>4.1</version>
+    </dependency>
+</dependencies>
 </project>
