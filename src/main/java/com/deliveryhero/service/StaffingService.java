@@ -8,6 +8,7 @@ import com.deliveryhero.models.TimeRange;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,29 +35,29 @@ public class StaffingService {
     }
 
     // This is for randomizing the days
-//    public void doAssignments() {
-//        for (final Employee employee : employees) {
-//            final List<List<SlotAssignment>> dailyMatrices = new ArrayList<>(weeklySlotMatrix.values());
-//            Collections.shuffle(dailyMatrices);
-//            for (final List<SlotAssignment> dailyMatrix : dailyMatrices) {
-//                currentSlotMatrix = dailyMatrix;
-//                resetDailyRemainingSlots();
-//                allocateSlotsToEmployee(employee);
-//            }
-//        }
-//        printSolution();
-//    }
-
     public void doAssignments() {
-        for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
-            currentSlotMatrix = entry.getValue();
-            resetDailyRemainingSlots();
-            for (final Employee employee : employees) {
+        for (final Employee employee : employees) {
+            final List<List<SlotAssignment>> dailyMatrices = new ArrayList<>(weeklySlotMatrix.values());
+            Collections.shuffle(dailyMatrices);
+            for (final List<SlotAssignment> dailyMatrix : dailyMatrices) {
+                currentSlotMatrix = dailyMatrix;
+                resetDailyRemainingSlots();
                 allocateSlotsToEmployee(employee);
             }
         }
         printSolution();
     }
+
+//    public void doAssignments() {
+//        for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
+//            currentSlotMatrix = entry.getValue();
+//            resetDailyRemainingSlots();
+//            for (final Employee employee : employees) {
+//                allocateSlotsToEmployee(employee);
+//            }
+//        }
+//        printSolution();
+//    }
 
     private void resetDailyRemainingSlots() {
         for (final Employee employee : employees) {
