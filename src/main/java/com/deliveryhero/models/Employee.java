@@ -56,7 +56,7 @@ public class Employee {
 
     public void addShift(final TimeRange shift) {
         shifts.add(shift);
-        shiftsAndBreaks.add(new TimeRange(Instant.ofEpochSecond(shift.getStart().getEpochSecond() - getMinBreakDurationHours() * 3600),
+        unavailableTimes.add(new TimeRange(Instant.ofEpochSecond(shift.getStart().getEpochSecond() - getMinBreakDurationHours() * 3600),
                 Instant.ofEpochSecond(shift.getEnd().getEpochSecond() + getMinBreakDurationHours() * 3600)));
     }
 
@@ -64,8 +64,8 @@ public class Employee {
         return unavailableTimes;
     }
 
-    public boolean checkShiftsAndBreaks(TimeRange newShift) {
-        for (TimeRange timeBlock : shiftsAndBreaks) {
+    public boolean checkUnavailabilities(TimeRange newShift) {
+        for (TimeRange timeBlock : unavailableTimes) {
             if (newShift.getStart().getEpochSecond() <= timeBlock.getEnd().getEpochSecond()
                     && newShift.getEnd().getEpochSecond() >= timeBlock.getStart().getEpochSecond()) {
                 return false;

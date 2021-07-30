@@ -8,7 +8,6 @@ import com.deliveryhero.models.TimeRange;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -163,7 +162,7 @@ public class StaffingService {
         float max = Float.MIN_VALUE;
         for (int i = 0; i < currentSlotMatrix.size(); i++) {
             final boolean improvesPenalty = currentSlotMatrix.get(i).getGlobalPenaltyImprovement() > max;           
-            final boolean isShiftFeasible = employee.checkShiftsAndBreaks(new TimeRange(
+            final boolean isShiftFeasible = employee.checkUnavailabilities(new TimeRange(
                     currentSlotMatrix.get(i).getDemand().getUnixTime(),
                     currentSlotMatrix.get(getEndSlot(i, slotsToAssign)).getDemand().getUnixTime()));
             if (improvesPenalty && isShiftFeasible) {
