@@ -42,7 +42,7 @@ public class Employee {
         this.employeeId = employeeId;
         this.startingPointId = startingPointId;
         this.maxShiftsPerDay = maxShiftsPerDay;
-        this.minBreakDurationHours = minShiftDurationHours;
+        this.minShiftDurationHours = minShiftDurationHours;
         this.minShiftsPerDay = minShiftsPerDay;
         this.maxShiftDurationHours = maxShiftDurationHours;
         this.minDurationPerDayHours = minDurationPerDayHours;
@@ -63,5 +63,15 @@ public class Employee {
 
     public List<TimeRange> getUnavailableTimes() {
         return unavailableTimes;
+    }
+
+    public boolean checkShiftsAndBreaks(TimeRange newShift) {
+        for (TimeRange timeBlock : shiftsAndBreaks) {
+            if (newShift.getStart().getEpochSecond() <= timeBlock.getEnd().getEpochSecond()
+                    && newShift.getEnd().getEpochSecond() >= timeBlock.getStart().getEpochSecond()) {
+                return false;
+            }
+        }
+        return true;
     }
 }

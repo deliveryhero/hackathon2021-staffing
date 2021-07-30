@@ -97,23 +97,30 @@ public class StaffingService {
         final List<TimeRange> unavailableTimes = employee.getUnavailableTimes();
         for (int shiftIndex = 0; shiftIndex < employee.getMaxShiftsPerDay(); shiftIndex++) {
             resetShiftRemainingSlots(employee);
-            computeGlobalImprovements(employee, shiftIndex);
-            allocateForShift(employee, shiftIndex);
+            final int slotsToAssign = getRemainingSlotsCount(employee);
+            if (slotsToAssign < employee.getMinShiftDurationHours() * 4) {
+                break;
+            }
+            computeGlobalImprovements(employee, slotsToAssign);
+            allocateForShift(employee, slotsToAssign);
         }
     }
 
-    private void allocateForShift(final Employee employee, final int shiftIndex) {
-        final int bestSlot = getBestSlot(employee);
+    private void allocateForShift(final Employee employee, final int slotsToAssign) {
+        final int bestSlot = getBestSlot(employee, slotsToAssign);
         if (bestSlot == -1) {
             return;
         }
-        final int slotsToAssign = getRemainingSlotsCount(employee);
-        final int endSlot = Math.min(bestSlot + slotsToAssign, currentSlotMatrix.size()) - 1;
-        for (int i = 0; i <= slotsToAssign; i++) {
-            assign(employee, bestSlot + i, shiftIndex);
+        final int endSlot = getEndSlot(bestSlot, slotsToAssign);
+        for (int i = bestSlot; i <= endSlot; i++) {
+            assign(employee, i);
         }
         employee.addShift(new TimeRange(currentSlotMatrix.get(bestSlot).getDemand().getUnixTime(),
                 currentSlotMatrix.get(endSlot).getDemand().getUnixTime()));
+    }
+
+    private int getEndSlot(int startSlot, int slotsToAssign) {
+        return Math.min(startSlot + slotsToAssign, currentSlotMatrix.size()) - 1;
     }
 
     private int getRemainingSlotsCount(final Employee employee) {
@@ -122,7 +129,7 @@ public class StaffingService {
                 Math.min(slots.getSlotsRemainingInDay(), slots.getSlotsRemainingInWeek()));
     }
 
-    private void assign(final Employee employee, final int slotIndex, final int shiftIndex) {
+    private void assign(final Employee employee, final int slotIndex) {
         if (slotIndex >= currentSlotMatrix.size()) {
             return;
         }
@@ -131,16 +138,19 @@ public class StaffingService {
         remainingSlots.get(employee.getEmployeeId()).decrement();
     }
 
-    private int getBestSlot(final Employee employee) {
+    private int getBestSlot(final Employee employee, int slotsToAssign) {
         int result = -1;
         float max = Float.MIN_VALUE;
         for (int i = 0; i < currentSlotMatrix.size(); i++) {
             final boolean improvesPenalty = currentSlotMatrix.get(i).getGlobalPenaltyImprovement() > max;
             /// TODO should consider min break if it is assigned to the same rider.
             // To check that the shift intercepts any of the time range in Employee.ShiftsAndBreak
-            final boolean alreadyAssigned = currentSlotMatrix.get(i).getAssignedEmployees().stream()
-                    .anyMatch(emp -> emp.getEmployeeId().equals(employee.getEmployeeId()));
-            if (improvesPenalty && !alreadyAssigned) {
+            //final boolean alreadyAssigned = currentSlotMatrix.get(i).getAssignedEmployees().stream()
+            //        .anyMatch(emp -> emp.getEmployeeId().equals(employee.getEmployeeId()));
+            final boolean isShiftFeasible = employee.checkShiftsAndBreaks(new TimeRange(
+                    currentSlotMatrix.get(i).getDemand().getUnixTime(),
+                    currentSlotMatrix.get(getEndSlot(i, slotsToAssign)).getDemand().getUnixTime()));
+            if (improvesPenalty && isShiftFeasible) {
                 result = i;
                 max = currentSlotMatrix.get(i).getGlobalPenaltyImprovement();
             }
@@ -148,8 +158,7 @@ public class StaffingService {
         return result;
     }
 
-    private List<SlotAssignment> computeGlobalImprovements(final Employee employee, final int shiftIndex) {
-        final int shiftSize = getRemainingSlotsCount(employee);
+    private List<SlotAssignment> computeGlobalImprovements(final Employee employee, final int shiftSize) {
         for (int i = 0; i < currentSlotMatrix.size(); i++) {
             final float globalImprovement = getGlobalImprovement(i, shiftSize);
             currentSlotMatrix.get(i).setGlobalPenaltyImprovement(globalImprovement);
