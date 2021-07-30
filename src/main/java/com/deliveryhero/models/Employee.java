@@ -1,12 +1,11 @@
 package com.deliveryhero.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -55,7 +54,7 @@ public class Employee {
         this.shiftsAndBreaks = new ArrayList<>();
     }
 
-    public void addShift(TimeRange shift) {
+    public void addShift(final TimeRange shift) {
         shifts.add(shift);
         shiftsAndBreaks.add(new TimeRange(Instant.ofEpochSecond(shift.getStart().getEpochSecond() - getMinBreakDurationHours() * 3600),
                 Instant.ofEpochSecond(shift.getEnd().getEpochSecond() + getMinBreakDurationHours() * 3600)));
