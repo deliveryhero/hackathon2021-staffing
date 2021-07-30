@@ -145,8 +145,6 @@ public class StaffingService {
             final boolean improvesPenalty = currentSlotMatrix.get(i).getGlobalPenaltyImprovement() > max;
             /// TODO should consider min break if it is assigned to the same rider.
             // To check that the shift intercepts any of the time range in Employee.ShiftsAndBreak
-            //final boolean alreadyAssigned = currentSlotMatrix.get(i).getAssignedEmployees().stream()
-            //        .anyMatch(emp -> emp.getEmployeeId().equals(employee.getEmployeeId()));
             final boolean isShiftFeasible = employee.checkShiftsAndBreaks(new TimeRange(
                     currentSlotMatrix.get(i).getDemand().getUnixTime(),
                     currentSlotMatrix.get(getEndSlot(i, slotsToAssign)).getDemand().getUnixTime()));
