@@ -24,10 +24,7 @@ public class SlotAssignment {
     }
 
     public float computeLocalPenaltyImprovement() {
-        int supplyDemandDiff = assignedEmployees.size() - demand.getDemand();
-        if (supplyDemandDiff == 0) {
-            return 0;
-        } else if (supplyDemandDiff < 0) {
+        if (assignedEmployees.size() - demand.getDemand() < 0) {
             return demand.getUnderStaffingPenalty();
         } else {
             return -demand.getOverStaffingPenalty();
