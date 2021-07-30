@@ -35,29 +35,29 @@ public class StaffingService {
     }
 
     // This is for randomizing the days
-    public void doAssignments() {
-        for (final Employee employee : employees) {
-            final List<List<SlotAssignment>> dailyMatrices = new ArrayList<>(weeklySlotMatrix.values());
-            Collections.shuffle(dailyMatrices);
-            for (final List<SlotAssignment> dailyMatrix : dailyMatrices) {
-                currentSlotMatrix = dailyMatrix;
-                resetDailyRemainingSlots();
-                allocateSlotsToEmployee(employee);
-            }
-        }
-        printSolution();
-    }
-
 //    public void doAssignments() {
-//        for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
-//            currentSlotMatrix = entry.getValue();
-//            resetDailyRemainingSlots();
-//            for (final Employee employee : employees) {
+//        for (final Employee employee : employees) {
+//            final List<List<SlotAssignment>> dailyMatrices = new ArrayList<>(weeklySlotMatrix.values());
+//            Collections.shuffle(dailyMatrices);
+//            for (final List<SlotAssignment> dailyMatrix : dailyMatrices) {
+//                currentSlotMatrix = dailyMatrix;
+//                resetDailyRemainingSlots();
 //                allocateSlotsToEmployee(employee);
 //            }
 //        }
 //        printSolution();
 //    }
+
+    public void doAssignments() {
+        for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
+            currentSlotMatrix = entry.getValue();
+            resetDailyRemainingSlots();
+            for (final Employee employee : employees) {
+                allocateSlotsToEmployee(employee);
+            }
+        }
+        printSolution();
+    }
 
     private void resetDailyRemainingSlots() {
         for (final Employee employee : employees) {
@@ -93,6 +93,9 @@ public class StaffingService {
                         String.format("%.2f", row.computeLocalPenalty()), String.join(",", assignedEmployees));
                 System.out.println(output);
             }
+        }
+        for (final Employee e : employees) {
+            System.out.println(e.getShifts().size());
         }
     }
 
