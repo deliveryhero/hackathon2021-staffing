@@ -11,12 +11,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class StaffingService {
     private final List<Demand> demandData = new ArrayList<>();
     private final List<Employee> employees = new ArrayList<>();
-    private final Map<LocalDate, List<SlotAssignment>> weeklySlotMatrix = new HashMap<>();
+    private final Map<LocalDate, List<SlotAssignment>> weeklySlotMatrix = new TreeMap<>();
     private List<SlotAssignment> currentSlotMatrix;
     private final Map<String, RemainingSlots> remainingSlots = new HashMap<>();
 
@@ -31,6 +32,19 @@ public class StaffingService {
             throw new RuntimeException(e);
         }
     }
+
+//    public void doAssignments() {
+//        for (final Employee employee : employees) {
+//            final List<List<SlotAssignment>> dailyMatrices = new ArrayList<>(weeklySlotMatrix.values());
+//            Collections.shuffle(dailyMatrices);
+//            for (final List<SlotAssignment> dailyMatrix : dailyMatrices) {
+//                currentSlotMatrix = dailyMatrix;
+//                resetDailyRemainingSlots();
+//                allocateSlotsToEmployee(employee);
+//            }
+//        }
+//        printSolution();
+//    }
 
     public void doAssignments() {
         for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
@@ -50,7 +64,7 @@ public class StaffingService {
         }
     }
 
-    private void resetShiftRemainingSlots(Employee employee) {
+    private void resetShiftRemainingSlots(final Employee employee) {
         remainingSlots.get(employee.getEmployeeId())
                 .setSlotsRemainingInShift(employee.getMaxShiftDurationHours() * 4);
     }
@@ -71,9 +85,10 @@ public class StaffingService {
                 final List<String> assignedEmployees =
                         row.getAssignedEmployees().stream().map(emp -> emp.getEmployeeId())
                                 .collect(Collectors.toList());
-                final String output = String.join("\t", row.getDemand().getStartingPointId(), row.getDemand().getTimestamp().toString(),
+                final String output = String.join("\t", row.getDemand().getStartingPointId(),
+                        row.getDemand().getTimestamp().toString(),
                         String.valueOf(row.getDemand().getDemand()), String.valueOf(row.getAssignedEmployees().size()),
-                        String.valueOf(row.computeLocalPenalty()), String.join(",", assignedEmployees));
+                        String.format("%.2f", row.computeLocalPenalty()), String.join(",", assignedEmployees));
                 System.out.println(output);
             }
         }
@@ -119,7 +134,7 @@ public class StaffingService {
                 currentSlotMatrix.get(endSlot).getDemand().getUnixTime()));
     }
 
-    private int getEndSlot(int startSlot, int slotsToAssign) {
+    private int getEndSlot(final int startSlot, final int slotsToAssign) {
         return Math.min(startSlot + slotsToAssign, currentSlotMatrix.size()) - 1;
     }
 
@@ -138,15 +153,17 @@ public class StaffingService {
         remainingSlots.get(employee.getEmployeeId()).decrement();
     }
 
-    private int getBestSlot(final Employee employee, int slotsToAssign) {
+    private int getBestSlot(final Employee employee, final int slotsToAssign) {
         int result = -1;
         float max = Float.MIN_VALUE;
         for (int i = 0; i < currentSlotMatrix.size(); i++) {
             final boolean improvesPenalty = currentSlotMatrix.get(i).getGlobalPenaltyImprovement() > max;
             /// TODO should consider min break if it is assigned to the same rider.
-            // To check that the shift intercepts any of the time range in Employee.ShiftsAndBreak
-            //final boolean alreadyAssigned = currentSlotMatrix.get(i).getAssignedEmployees().stream()
-            //        .anyMatch(emp -> emp.getEmployeeId().equals(employee.getEmployeeId()));
+            // To check that the shift intercepts any of the time range in
+            /// Employee.ShiftsAndBreak
+            // final boolean alreadyAssigned =
+            /// currentSlotMatrix.get(i).getAssignedEmployees().stream()
+            // .anyMatch(emp -> emp.getEmployeeId().equals(employee.getEmployeeId()));
             final boolean isShiftFeasible = employee.checkShiftsAndBreaks(new TimeRange(
                     currentSlotMatrix.get(i).getDemand().getUnixTime(),
                     currentSlotMatrix.get(getEndSlot(i, slotsToAssign)).getDemand().getUnixTime()));
@@ -168,8 +185,8 @@ public class StaffingService {
 
     private float getGlobalImprovement(final int rowIndex, final int lookAheadSlots) {
         float result = 0;
-        for (int i = rowIndex; i <= rowIndex + lookAheadSlots; i++) {
-            result += currentSlotMatrix.get(rowIndex).computeLocalPenaltyImprovement();
+        for (int i = rowIndex; i <= rowIndex + lookAheadSlots && i < currentSlotMatrix.size(); i++) {
+            result += currentSlotMatrix.get(i).computeLocalPenaltyImprovement();
         }
         return result;
     }
