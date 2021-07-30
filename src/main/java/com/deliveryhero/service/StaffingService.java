@@ -33,6 +33,7 @@ public class StaffingService {
         }
     }
 
+    // This is for randomizing the days
 //    public void doAssignments() {
 //        for (final Employee employee : employees) {
 //            final List<List<SlotAssignment>> dailyMatrices = new ArrayList<>(weeklySlotMatrix.values());
