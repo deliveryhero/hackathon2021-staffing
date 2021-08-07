@@ -51,8 +51,16 @@ public class StaffingService {
         for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
             currentSlotMatrix = entry.getValue();
             resetDailyRemainingSlots();
-            for (final Employee employee : employees) {
-                allocateSlotsToEmployee(employee);
+            for (int shiftIndex = 0; shiftIndex < employees.get(0).getMaxShiftsPerDay(); shiftIndex++) {
+                //Collections.shuffle(employees);
+                for (final Employee employee : employees) {
+                    resetShiftRemainingSlots(employee);
+                    final int slotsToAssign = getRemainingSlotsCount(employee);
+                    if (slotsToAssign < employee.getMinShiftDurationHours() * 4) {
+                        break;
+                    }
+                    allocateSlotsToEmployee(employee, slotsToAssign);
+                }
             }
         }
         printSolution();
@@ -93,9 +101,6 @@ public class StaffingService {
                 System.out.println(output);
             }
         }
-        for (final Employee e : employees) {
-            System.out.println(e.getShifts().size());
-        }
     }
 
     private void createSlotMatrix() {
@@ -112,17 +117,9 @@ public class StaffingService {
         return demandData.stream().collect(Collectors.groupingBy(Demand::getDate));
     }
 
-    private void allocateSlotsToEmployee(final Employee employee) {
-        final List<TimeRange> unavailableTimes = employee.getUnavailableTimes();
-        for (int shiftIndex = 0; shiftIndex < employee.getMaxShiftsPerDay(); shiftIndex++) {
-            resetShiftRemainingSlots(employee);
-            final int slotsToAssign = getRemainingSlotsCount(employee);
-            if (slotsToAssign < employee.getMinShiftDurationHours() * 4) {
-                break;
-            }
-            computeGlobalImprovements(employee, slotsToAssign);
-            allocateForShift(employee, slotsToAssign);
-        }
+    private void allocateSlotsToEmployee(final Employee employee, int slotsToAssign) {
+        computeGlobalImprovements(employee, slotsToAssign);
+        allocateForShift(employee, slotsToAssign);
     }
 
     private void allocateForShift(final Employee employee, final int slotsToAssign) {
@@ -159,7 +156,7 @@ public class StaffingService {
 
     private int getBestSlot(final Employee employee, final int slotsToAssign) {
         int result = -1;
-        float max = Float.MIN_VALUE;
+        float max = 0;
         for (int i = 0; i < currentSlotMatrix.size(); i++) {
             final boolean improvesPenalty = currentSlotMatrix.get(i).getGlobalPenaltyImprovement() > max;           
             final boolean isShiftFeasible = employee.checkUnavailabilities(new TimeRange(
