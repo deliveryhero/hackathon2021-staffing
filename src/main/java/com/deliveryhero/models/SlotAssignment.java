@@ -7,11 +7,13 @@ import lombok.Data;
 
 @Data
 public class SlotAssignment {
+    private int index;
     private Demand demand;
     private final List<Employee> assignedEmployees = new ArrayList<>();
     private float globalPenaltyImprovement;
 
-    public SlotAssignment(final Demand demand) {
+    public SlotAssignment(final int index, final Demand demand) {
+        this.index = index;
         this.demand = demand;
     }
     

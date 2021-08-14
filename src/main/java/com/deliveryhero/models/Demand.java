@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Demand {
+    private int index;
     private String startingPointId;
     private Instant unixTime;
     private LocalDateTime timestamp;

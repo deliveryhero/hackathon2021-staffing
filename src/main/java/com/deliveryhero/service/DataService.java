@@ -2,6 +2,8 @@ package com.deliveryhero.service;
 
 import static java.lang.Float.parseFloat;
 import static java.lang.Integer.parseInt;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 import com.deliveryhero.models.Demand;
 import com.deliveryhero.models.Employee;
@@ -11,6 +13,7 @@ import com.opencsv.CSVReaderBuilder;
 import java.io.FileReader;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,14 +21,40 @@ import java.util.List;
 import java.util.Map;
 
 public class DataService {
+    public static int numberSlotsPerHour;
+    public static int numberSlotsPerDay;
+    public static int[] days;
+
     public List<Demand> getDemandData() throws IOException {
         final List<Demand> result = new ArrayList<>();
+        LocalDate date = LocalDate.of(2021, 8, 1);
+        LocalDate date2 = LocalDate.of(2021, 8, 2);
+        System.out.println(DAYS.between(date2, date));
+        System.out.println(date.getDayOfWeek().getValue());
         final CSVReader csvReader =
                 new CSVReaderBuilder(new FileReader("data/se-borlange-25022/demand.csv")).withSkipLines(1).build();
+        int index = 0;
         for (final String[] row : csvReader.readAll()) {
-            result.add(createDemand(row));
+            result.add(createDemand(index++, row));
+            System.out.println(result.get(result.size() - 1).getDate());
         }
+        int slotInterval = (int) (result.get(1).getUnixTime().getEpochSecond() - result.get(0).getUnixTime().getEpochSecond());
+        numberSlotsPerHour = 3600 / slotInterval;
+        numberSlotsPerDay = numberSlotsPerHour * 24;
+        for (Demand d : result) {
+            System.out.println(d.getIndex() / numberSlotsPerDay);
+        }
+        System.out.println(index / numberSlotsPerDay);
+        createDays(index / numberSlotsPerDay);
+        assert(index / numberSlotsPerDay == 7);
         return result;
+    }
+
+    private void createDays(int numberDays) {
+        days = new int[numberDays];
+        for (int i = 0; i < numberDays; i++) {
+            days[i] = i;
+        }
     }
 
     public List<Employee> getEmployeeData() throws IOException {
@@ -63,8 +92,9 @@ public class DataService {
                 parseInt(row[7]));
     }
 
-    private Demand createDemand(final String[] row) {
+    private Demand createDemand(int index, final String[] row) {
         return new Demand(
+                index,
                 row[0],
                 Instant.ofEpochSecond(parseInt(row[1])),
                 getTimestamp(row),

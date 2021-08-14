@@ -7,8 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
 public class Employee {
     private String employeeId;
@@ -23,7 +21,7 @@ public class Employee {
     private int maxDurationPerWeekHours;
     private int minBreakDurationHours;
     private List<TimeRange> unavailableTimes;
-    private List<TimeRange> shifts;
+    private List<int[]> shifts;
     private List<TimeRange> shiftsAndBreaks;
 
     public Employee(String employeeId,
@@ -54,10 +52,10 @@ public class Employee {
         this.shiftsAndBreaks = new ArrayList<>();
     }
 
-    public void addShift(final TimeRange shift) {
-        shifts.add(shift);
-        unavailableTimes.add(new TimeRange(Instant.ofEpochSecond(shift.getStart().getEpochSecond() - getMinBreakDurationHours() * 3600),
-                Instant.ofEpochSecond(shift.getEnd().getEpochSecond() + getMinBreakDurationHours() * 3600)));
+    public void addShift(final TimeRange shiftTime, int[] shiftIndex) {
+        shifts.add(shiftIndex);
+        unavailableTimes.add(new TimeRange(Instant.ofEpochSecond(shiftTime.getStart().getEpochSecond() - getMinBreakDurationHours() * 3600),
+                Instant.ofEpochSecond(shiftTime.getEnd().getEpochSecond() + getMinBreakDurationHours() * 3600)));
     }
 
     public List<TimeRange> getUnavailableTimes() {
