@@ -24,6 +24,8 @@ public class StaffingService {
     private List<SlotAssignment> currentSlotMatrix;
     private final Map<String, RemainingSlots> remainingSlots = new HashMap<>();
     private long startTime;
+    private int defaultSlotsPerShift = 14;
+    private double[] shiftEvals;
 
     public StaffingService() {
         final DataService dataService = new DataService();
@@ -31,17 +33,12 @@ public class StaffingService {
             demandData.addAll(dataService.getDemandData());
             employees.addAll(dataService.getEmployeeData());
             startTime = System.nanoTime();
-            initDays();
             initRemainingSlots();
             //createSlotMatrix();
             createAllSlots();
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private void initDays() {
-        System.out.println(demandData.stream().collect(Collectors.groupingBy(Demand::getDate)));
     }
 
     private void createAllSlots() {
@@ -64,8 +61,27 @@ public class StaffingService {
 //        printSolution();
 //    }
 
-    // TODO currentSlotMatrix is day-based. should make it week-based.
+//    public void doAssignments_bk() {
+//        for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
+//            currentSlotMatrix = entry.getValue();
+//            resetDailyRemainingSlots();
+//            for (int shiftIndex = 0; shiftIndex < employees.get(0).getMaxShiftsPerDay(); shiftIndex++) {
+//                //Collections.shuffle(employees);
+//                for (final Employee employee : employees) {
+//                    resetShiftRemainingSlots(employee);
+//                    final int slotsToAssign = getRemainingSlotsCount(employee);
+//                    if (slotsToAssign < employee.getMinShiftDurationHours() * DataService.numberSlotsPerHour) {
+//                        break;
+//                    }
+//                    allocateSlotsToEmployee(employee, slotsToAssign);
+//                }
+//            }
+//        }
+
+        // TODO currentSlotMatrix is day-based. should make it week-based.
     public void doAssignments() {
+        initShiftEvaluations();
+
         for (final Map.Entry<LocalDate, List<SlotAssignment>> entry : weeklySlotMatrix.entrySet()) {
             currentSlotMatrix = entry.getValue();
             resetDailyRemainingSlots();
@@ -88,6 +104,12 @@ public class StaffingService {
         localSearch();
 
         printSolution();
+    }
+
+    private void initShiftEvaluations() {
+        shiftEvals = new double[allSlots.length];
+        Arrays.fill(shiftEvals, Double.MAX_VALUE);
+        evaluateAllShiftsFixedSize(defaultSlotsPerShift);
     }
 
     private void localSearch() {
@@ -225,8 +247,29 @@ public class StaffingService {
 
     private float getGlobalImprovement(final int rowIndex, final int lookAheadSlots) {
         float result = 0;
-        for (int i = rowIndex; i <= rowIndex + lookAheadSlots && i < currentSlotMatrix.size(); i++) {
+        for (int i = rowIndex; i < rowIndex + lookAheadSlots && i < currentSlotMatrix.size(); i++) {
             result += currentSlotMatrix.get(i).computeLocalPenaltyImprovement();
+        }
+        return result;
+    }
+
+    private double evaluateAllShiftsFixedSize(final int shiftSize) {
+        double result = 0;
+        shiftEvals[0] = evaluateOneShift(0, shiftSize);
+        for (int i = 1; i < allSlots.length - shiftSize; i++) {
+            shiftEvals[i] = shiftEvals[i-1] - allSlots[i-1].computeLocalPenaltyImprovement()
+                    + allSlots[i + shiftSize - 1].computeLocalPenaltyImprovement();
+        }
+        return result;
+    }
+
+    private double evaluateOneShift(int startIndex, int shiftSize) {
+        if (startIndex + shiftSize >= allSlots.length) {
+            return Double.MAX_VALUE;
+        }
+        double result = 0;
+        for (int i = startIndex; i < startIndex + shiftSize && i < allSlots.length; i++) {
+            result += allSlots[i].computeLocalPenaltyImprovement();
         }
         return result;
     }
