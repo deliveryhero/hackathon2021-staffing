@@ -1,6 +1,6 @@
 package com.deliveryhero.service;
 
-import static java.lang.Float.parseFloat;
+import static java.lang.Double.parseDouble;
 import static java.lang.Integer.parseInt;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.SECONDS;
@@ -29,21 +29,15 @@ public class DataService {
         final List<Demand> result = new ArrayList<>();
         LocalDate date = LocalDate.of(2021, 8, 1);
         LocalDate date2 = LocalDate.of(2021, 8, 2);
-        System.out.println(DAYS.between(date2, date));
-        System.out.println(date.getDayOfWeek().getValue());
         final CSVReader csvReader =
                 new CSVReaderBuilder(new FileReader("data/se-borlange-25022/demand.csv")).withSkipLines(1).build();
         int index = 0;
         for (final String[] row : csvReader.readAll()) {
             result.add(createDemand(index++, row));
-            System.out.println(result.get(result.size() - 1).getDate());
         }
         int slotInterval = (int) (result.get(1).getUnixTime().getEpochSecond() - result.get(0).getUnixTime().getEpochSecond());
         numberSlotsPerHour = 3600 / slotInterval;
         numberSlotsPerDay = numberSlotsPerHour * 24;
-        for (Demand d : result) {
-            System.out.println(d.getIndex() / numberSlotsPerDay);
-        }
         System.out.println(index / numberSlotsPerDay);
         createDays(index / numberSlotsPerDay);
         assert(index / numberSlotsPerDay == 7);
@@ -99,8 +93,8 @@ public class DataService {
                 Instant.ofEpochSecond(parseInt(row[1])),
                 getTimestamp(row),
                 parseInt(row[8]),
-                parseFloat(row[9]),
-                parseFloat(row[10]));
+                parseDouble(row[9]),
+                parseDouble(row[10]));
     }
 
     private Employee createEmployee(final String[] row) {

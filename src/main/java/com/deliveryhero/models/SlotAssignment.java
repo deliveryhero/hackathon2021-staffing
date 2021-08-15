@@ -10,22 +10,31 @@ public class SlotAssignment {
     private int index;
     private Demand demand;
     private final List<Employee> assignedEmployees = new ArrayList<>();
-    private float globalPenaltyImprovement;
+    private double globalPenaltyImprovement;
 
     public SlotAssignment(final int index, final Demand demand) {
         this.index = index;
         this.demand = demand;
     }
-    
-    public void addEmployee(final Employee employee) {
+
+    /**
+     *
+     * @param employee
+     * @return local penalty improvement change since adding an employee.
+     */
+    public double addEmployee(final Employee employee) {
         assignedEmployees.add(employee);
+        if (assignedEmployees.size() - demand.getDemand() == 0) {
+            return - demand.getUnderStaffingPenalty() - demand.getOverStaffingPenalty();
+        }
+        return 0;
     }
     
     public List<Employee> getAssignedEmployees() {
         return Collections.unmodifiableList(assignedEmployees);
     }
 
-    public float computeLocalPenaltyImprovement() {
+    public double computeLocalPenaltyImprovement() {
         if (assignedEmployees.size() - demand.getDemand() < 0) {
             return demand.getUnderStaffingPenalty();
         } else {
@@ -33,7 +42,7 @@ public class SlotAssignment {
         }
     }
 
-    public float computeLocalPenalty() {
+    public double computeLocalPenalty() {
         int supplyDemandDiff = assignedEmployees.size() - demand.getDemand();
         if (supplyDemandDiff < 0) {
             // under-staffing
@@ -44,7 +53,7 @@ public class SlotAssignment {
         }
     }
 
-    public float getGlobalPenaltyImprovement() {
+    public double getGlobalPenaltyImprovement() {
         return globalPenaltyImprovement;
     }
 }

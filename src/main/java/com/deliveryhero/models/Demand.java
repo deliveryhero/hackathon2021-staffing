@@ -16,8 +16,8 @@ public class Demand {
     private Instant unixTime;
     private LocalDateTime timestamp;
     private int demand;
-    private float underStaffingPenalty;
-    private float overStaffingPenalty;
+    private double underStaffingPenalty;
+    private double overStaffingPenalty;
     
     public LocalDate getDate() {
         return timestamp.toLocalDate();
