@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 public class DataService {
+    public static int slotInterval;
     public static int numberSlotsPerHour;
     public static int numberSlotsPerDay;
     public static int[] days;
@@ -35,7 +36,7 @@ public class DataService {
         for (final String[] row : csvReader.readAll()) {
             result.add(createDemand(index++, row));
         }
-        int slotInterval = (int) (result.get(1).getUnixTime().getEpochSecond() - result.get(0).getUnixTime().getEpochSecond());
+        slotInterval = (int) (result.get(1).getUnixTime().getEpochSecond() - result.get(0).getUnixTime().getEpochSecond());
         numberSlotsPerHour = 3600 / slotInterval;
         numberSlotsPerDay = numberSlotsPerHour * 24;
         System.out.println(index / numberSlotsPerDay);

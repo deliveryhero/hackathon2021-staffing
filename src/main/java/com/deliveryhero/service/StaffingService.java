@@ -4,9 +4,12 @@ import com.deliveryhero.models.*;
 import com.deliveryhero.util.Randomizer;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class StaffingService {
     private final List<Demand> demandData = new ArrayList<>();
@@ -26,12 +29,33 @@ public class StaffingService {
             demandData.addAll(dataService.getDemandData());
             numberSlots = demandData.size();
             employees.addAll(dataService.getEmployeeData());
-            startTime = System.nanoTime();
-            initRemainingSlots();
+            //initRemainingSlots();
             //createSlotMatrix();
             createAllSlots();
+            initUnavailabilities();
+            startTime = System.nanoTime();
         } catch (final IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void initUnavailabilities() {
+        Instant weekStart = demandData.get(0).getUnixTime();
+        Instant weekEnd = Instant.ofEpochSecond(demandData.get(numberSlots - 1).getUnixTime().getEpochSecond()
+                + DataService.slotInterval);
+        for (Employee employee : employees) {
+            Iterator<TimeRange> unavailableTimes = employee.getUnavailableTimes().iterator();
+            TimeRange times;
+            while (unavailableTimes.hasNext()) {
+                times = unavailableTimes.next();
+                if (times.getEnd().compareTo(weekStart) > 0 && times.getStart().compareTo(weekEnd) < 0) {
+                    int slotStart = Math.max(0, (int) SECONDS.between(weekStart, times.getStart()) / DataService.slotInterval);
+                    int slotEnd = (int) Math.min(numberSlots - 1,
+                            Math.ceil(SECONDS.between(weekStart, times.getEnd()) * 1.0 / DataService.slotInterval) - 1);
+                    employee.addUnavailableSlot(new SlotRange(slotStart, slotEnd));
+
+                }
+            }
         }
     }
 
@@ -109,8 +133,7 @@ public class StaffingService {
     }
 
     private void assignShift(Shift shift, Employee employee) {
-        employee.addShift(new TimeRange(allSlots[shift.getStart()].getDemand().getUnixTime(),
-                allSlots[shift.getEnd()].getDemand().getUnixTime()), shift);
+        employee.addShift(shift);
     }
 
     private Map<Integer, Double> computeShiftEvaluationChanges(Shift shift, Employee employee) {
@@ -148,9 +171,10 @@ public class StaffingService {
         if (! employee.canAddShift(shift)) {
             return false;
         }
-        if (! employee.checkUnavailabilities(new TimeRange(allSlots[shift.getStart()].getDemand().getUnixTime(),
-                allSlots[shift.getStart()].getDemand().getUnixTime()))) {
-            //System.out.println("cannot add shift " + shift + " to employee " + employee + " due to unavailability");
+        if (! employee.checkUnavailabilities(shift)) {
+//            System.out.println("cannot add shift " + shift + " to employee " + employee + " due to unavailability");
+//            System.out.println(employee.getUnavailableSlots());
+//            System.out.println(employee.getShiftAndBreakSlots());
             return false;
         }
         return true;
@@ -228,18 +252,18 @@ public class StaffingService {
     }
 
     // TODO compute number of slots per hour (e.g. 4 here) by slot size (e.g. 15 minutes).
-    private void initRemainingSlots() {
-        for (final Employee employee : employees) {
-            //final int slotsRemainingInShift = employee.getMaxShiftDurationHours() * DataService.numberSlotsPerHour;
-            final int slotsRemainingInShift = 14;
-                    //(employee.getMinShiftDurationHours() + employee.getMaxShiftDurationHours())/ 2 * DataService.numberSlotsPerHour;
-
-            final int slotsRemainingInDay = employee.getMaxDurationPerDayHours() * DataService.numberSlotsPerHour;
-            final int slotsRemainingInWeek = employee.getMaxDurationPerWeekHours() * DataService.numberSlotsPerHour;
-            remainingSlots.put(employee.getEmployeeId(),
-                    new RemainingSlots(slotsRemainingInShift, slotsRemainingInDay, slotsRemainingInWeek));
-        }
-    }
+//    private void initRemainingSlots() {
+//        for (final Employee employee : employees) {
+//            //final int slotsRemainingInShift = employee.getMaxShiftDurationHours() * DataService.numberSlotsPerHour;
+//            final int slotsRemainingInShift = 14;
+//                    //(employee.getMinShiftDurationHours() + employee.getMaxShiftDurationHours())/ 2 * DataService.numberSlotsPerHour;
+//
+//            final int slotsRemainingInDay = employee.getMaxDurationPerDayHours() * DataService.numberSlotsPerHour;
+//            final int slotsRemainingInWeek = employee.getMaxDurationPerWeekHours() * DataService.numberSlotsPerHour;
+//            remainingSlots.put(employee.getEmployeeId(),
+//                    new RemainingSlots(slotsRemainingInShift, slotsRemainingInDay, slotsRemainingInWeek));
+//        }
+//    }
 
     private void printSolution() {
         double cost = computeTotalCost();
@@ -265,6 +289,7 @@ public class StaffingService {
         }
         System.out.println(tabuShifts.size());
         System.out.println(tabuShifts);
+
     }
 
     private double computeTotalCost() {

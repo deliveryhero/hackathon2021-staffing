@@ -24,7 +24,8 @@ public class Employee {
     private int maxDurationPerWeekHours;
     private int minBreakDurationHours;
     private List<TimeRange> unavailableTimes;
-    private List<TimeRange> shiftsAndBreaks;
+    private List<SlotRange> unavailableSlots;
+    private List<SlotRange> shiftAndBreakSlots;
     private List<Shift> assignedShifts;
     private int weeklySlots;
     private int[] dailySlots;
@@ -61,15 +62,16 @@ public class Employee {
         this.maxDurationPerWeekHours = maxDurationPerWeekHours;
         this.minBreakDurationHours = minBreakDurationHours;
         this.unavailableTimes = new ArrayList<>();
+        this.unavailableSlots = new ArrayList<>();
         this.assignedShifts = new ArrayList<>();
-        this.shiftsAndBreaks = new ArrayList<>();
+        this.shiftAndBreakSlots = new ArrayList<>();
     }
 
-    public void addShift(final TimeRange shiftTime, Shift shift) {
+    public void addShift(Shift shift) {
         assignedShifts.add(shift);
         updateState(shift);
-        unavailableTimes.add(new TimeRange(Instant.ofEpochSecond(shiftTime.getStart().getEpochSecond() - getMinBreakDurationHours() * 3600),
-                Instant.ofEpochSecond(shiftTime.getEnd().getEpochSecond() + getMinBreakDurationHours() * 3600)));
+        shiftAndBreakSlots.add(new SlotRange(Math.max(0, shift.getStart() - minBreakDurationSlots),
+                        shift.getEnd() + minBreakDurationSlots));
     }
 
     private void updateState(Shift shift) {
@@ -84,7 +86,7 @@ public class Employee {
         return unavailableTimes;
     }
 
-    public boolean checkUnavailabilities(TimeRange newShift) {
+    public boolean checkUnavailableTimes(TimeRange newShift) {
         for (TimeRange timeBlock : unavailableTimes) {
             if (newShift.getStart().getEpochSecond() <= timeBlock.getEnd().getEpochSecond()
                     && newShift.getEnd().getEpochSecond() >= timeBlock.getStart().getEpochSecond()) {
@@ -127,4 +129,23 @@ public class Employee {
     public void removeAssignedShift(Shift shift) {
 
     }
+
+    public void addUnavailableSlot(SlotRange slotRange) {
+        unavailableSlots.add(slotRange);
+    }
+
+    public boolean checkUnavailabilities(SlotRange shift) {
+        return checkUnavailabilitiesBySlots(shift, unavailableSlots)
+                && checkUnavailabilitiesBySlots(shift, shiftAndBreakSlots);
+    }
+
+    public boolean checkUnavailabilitiesBySlots(SlotRange shift, List<SlotRange> slots) {
+        for (SlotRange slotBlock : slots) {
+            if (shift.getStart() <= slotBlock.getEnd() && shift.getEnd() >= slotBlock.getStart()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 }

@@ -4,16 +4,13 @@ import com.deliveryhero.service.DataService;
 import lombok.Data;
 
 @Data
-public class Shift implements Comparable<Shift> {
-    private int start;
-    private int end;
+public class Shift extends SlotRange implements Comparable<Shift> {
     private double evaluation;
     private int length;
     private int day;
 
     public Shift(int start, int end, double evaluation) {
-        this.start = start;
-        this.end = end;
+        super(start, end);
         this.evaluation = evaluation;
         this.length = end - start + 1;
         this.day = start / DataService.numberSlotsPerDay;
